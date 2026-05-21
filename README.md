@@ -1,6 +1,6 @@
 # 📦 OrderStream — Advanced Full-Stack Order Management System
 
-OrderStream is a premium, state-of-the-art enterprise-grade Order Management System (OMS) designed to deliver real-time control, advanced security, and seamless payment processing. Architected with a resilient **Spring Boot 3** backend and a lightning-fast **React (Vite)** frontend, it integrates multiple payment methods, secure OAuth2 and magic link logins, and instant email services with MongoDB persistence.
+OrderStream is a premium, state-of-the-art enterprise-grade Order Management System (OMS) designed to deliver real-time control, advanced security, and seamless payment processing. Architected with a resilient **Spring Boot 3** backend and a lightning-fast **React (Vite)** frontend, it integrates  payment method, secure OAuth2 and magic link logins, and instant email services with MongoDB persistence.
 
 ---
 
@@ -12,8 +12,7 @@ OrderStream is a premium, state-of-the-art enterprise-grade Order Management Sys
     *   ⚡ **Passwordless Login** (Magic Link) via specialized secure tokens.
     *   📧 **OTP Email Verification** for extra safety upon registration.
     *   🌍 **Social Logins** (Google OAuth2 and GitHub OAuth2) with seamless automatic user registration.
-*   **💳 Dual Payment Gateways**:
-    *   **Stripe** integration supporting international multi-currency checkouts (USD).
+*   **💳Payment Gateways**:
     *   **Razorpay** integration designed specifically for Indian transaction systems (INR).
     *   🛡️ Secure payment verification utilizing automated backend webhook event handshakes.
 *   **📊 Dynamic Business Analytics**: Real-time sales telemetry, active customer trackers, dynamic order volume timelines, and high-converting product dashboards.
@@ -29,7 +28,7 @@ OrderStream is a premium, state-of-the-art enterprise-grade Order Management Sys
 | **Frontend** | React 18, Vite, Tailwind CSS, Lucide Icons, Axios | Ultra-fast client, clean layout, responsive grids, sleek visuals. |
 | **Backend** | Spring Boot 3, Spring Security, Spring Data MongoDB | High-performance, robust, secure REST APIs. |
 | **Database** | MongoDB | Highly flexible document storage for dynamic order JSON metadata. |
-| **Payments** | Stripe SDK, Razorpay SDK | Double-shielded financial checkout pipelines. |
+| **Payment** |  Razorpay SDK | Double-shielded financial checkout pipelines. |
 | **Mailing** | Resend API, Gmail SMTP | Instant OTP and magic link dispatchers. |
 | **Auth** | OAuth2, Spring Security Core (JWT) | Google Cloud Console, GitHub Developer integrations. |
 
@@ -120,11 +119,6 @@ Copy the `.env.example` configurations to local `.env` variables:
     GITHUB_CLIENT_ID=your-github-client-id
     GITHUB_CLIENT_SECRET=your-github-secret
 
-    # Stripe Test Credentials
-    STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
-    STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-    STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
-
     # Razorpay Test Credentials
     RAZORPAY_KEY_ID=rzp_test_your_razorpay_key_id
     RAZORPAY_KEY_SECRET=your_razorpay_key_secret
@@ -181,14 +175,6 @@ Your web application will now be running at **`http://localhost:5173`**!
 ---
 
 ## 💳 Payment Gateway Credentials
-
-### 💳 Stripe Sandbox Checks
-
-*   **Mode**: Sandbox / Test Mode
-*   **Test Cards**:
-    *   Visa: `4242 4242 4242 4242`
-    *   Mastercard: `5555 5555 5555 4444`
-*   **Expiry / CVC**: Use any future expiry date and any 3-digit CVV number.
 
 ### 💳 Razorpay Sandbox Checks
 
