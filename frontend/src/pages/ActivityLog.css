@@ -1,0 +1,15 @@
+.log-page { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.log-page h1 { font-size: 28px; background: linear-gradient(135deg,#fff,#a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.log-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+.log-card { padding: 24px; }
+.timeline { position: relative; padding-left: 30px; display: flex; flex-direction: column; gap: 12px; }
+.timeline::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(180deg, rgba(99,102,241,.4), rgba(236,72,153,.4)); }
+.timeline-item { position: relative; }
+.t-dot { position: absolute; left: -25px; top: 20px; width: 12px; height: 12px; border-radius: 50%; }
+.t-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--glass-border); }
+.t-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+.t-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.t-body p { color: hsl(var(--text-main)); font-size: 13px; }
+.t-target { color: hsl(var(--text-dim)); }
+.t-time { color: hsl(var(--text-muted)); font-size: 11px; }
+.t-tag { font-size: 10px; padding: 3px 10px; border-radius: 999px; background: rgba(99,102,241,.15); color: #a5b4fc; font-weight: 600; letter-spacing: 1px; }

@@ -1,0 +1,58 @@
+# =========================================================================
+# OrderStream Git Ignore Configuration
+# =========================================================================
+
+# IDE / Editor configuration folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.metadata
+.classpath
+.project
+.settings/
+.factorypath
+.mvn/
+
+# OS-specific system files
+Thumbs.db
+db.db
+Desktop.ini
+.DS_Store
+
+# Frontend Node modules and build outputs
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.eslintcache
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Backend Java build outputs
+backend/target/
+backend/*.class
+backend/*.pom
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/mvnw
+backend/mvnw.cmd
+
+# Environment variables & private configurations
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Temporary files & archives
+*.zip
+*.tar.gz
+*.log
+temp/
+tmp/
+query

@@ -1,0 +1,19 @@
+.reports-page { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.reports-page h1 { font-size: 28px; background: linear-gradient(135deg,#fff,#67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.tpl-card { padding: 22px; border-radius: 18px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 10px; transition: var(--transition); }
+.tpl-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; }
+.tpl-card h4 { font-size: 16px; color: hsl(var(--text-main)); margin-top: 6px; }
+.tpl-card p { color: hsl(var(--text-dim)); font-size: 12px; line-height: 1.5; flex: 1; }
+.gen-btn { padding: 10px 14px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; border: none; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
+.gen-btn:disabled { opacity: 0.6; cursor: wait; }
+.hist-card { padding: 18px; }
+.hist-list { display: flex; flex-direction: column; gap: 8px; }
+.hist-row { display: grid; grid-template-columns: 44px 1fr auto 40px; gap: 14px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,.02); align-items: center; }
+.h-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(99,102,241,.15); color: #a5b4fc; display: grid; place-items: center; }
+.h-info { display: flex; flex-direction: column; }
+.h-info b { color: hsl(var(--text-main)); font-size: 14px; }
+.h-info span { color: hsl(var(--text-dim)); font-size: 12px; }
+.format-tag { padding: 4px 10px; border-radius: 999px; background: rgba(139,92,246,.15); color: #c4b5fd; font-size: 10px; font-weight: 600; }
+.dl-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--glass-border); background: transparent; color: hsl(var(--text-dim)); cursor: pointer; display: grid; place-items: center; }
+.dl-btn:hover { background: rgba(99,102,241,.15); color: #a5b4fc; }

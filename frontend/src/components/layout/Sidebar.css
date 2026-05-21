@@ -1,0 +1,284 @@
+/* ═══════════════════════════════════════════════════════
+   Sidebar V3 — Premium navigation with upgrade CTA
+   ═══════════════════════════════════════════════════════ */
+
+.sidebar-v3 {
+  width: 272px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.25rem;
+  z-index: 100;
+  flex-shrink: 0;
+  background: rgba(8, 8, 18, 0.6);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  overflow-y: auto;
+}
+.sidebar-v3::-webkit-scrollbar { width: 3px; }
+.sidebar-v3::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+
+/* ─── Logo ─── */
+.sidebar-logo-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding: 0 0.25rem;
+  position: relative;
+}
+.logo-glow-v3 {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  background: #6366f1;
+  filter: blur(18px);
+  opacity: 0.25;
+  transform: translateY(-50%);
+}
+.logo-icon-v3 {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+.logo-text-v3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.logo-dot-v3 { color: #6366f1; }
+
+/* ─── Navigation ─── */
+.sidebar-nav-v3 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+.nav-group-v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.nav-label-v3 {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+  padding-left: 0.75rem;
+}
+
+.nav-link-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.18s ease;
+  text-decoration: none;
+  position: relative;
+}
+.nav-link-v3:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+}
+.nav-link-v3.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  font-weight: 600;
+}
+.nav-link-v3.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: #6366f1;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Badges */
+.nav-badge-v3 {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.nav-badge-v3.new {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+  color: #a78bfa;
+}
+.nav-badge-v3.pro {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(245, 158, 11, 0.15));
+  color: #f59e0b;
+  animation: badgePulse 2.5s infinite;
+}
+@keyframes badgePulse {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+/* ─── Upgrade CTA ─── */
+.upgrade-cta-v3 {
+  position: relative;
+  margin: 0.5rem 0;
+  padding: 1.1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  overflow: hidden;
+}
+.upgrade-cta-glow {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: #6366f1;
+  filter: blur(30px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.upgrade-cta-icon {
+  display: inline-flex;
+  padding: 0.4rem;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  margin-bottom: 0.5rem;
+}
+.upgrade-cta-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.25rem;
+}
+.upgrade-cta-desc {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+}
+.upgrade-cta-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  width: 100%;
+  justify-content: center;
+}
+.upgrade-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+}
+
+/* ─── Footer ─── */
+.sidebar-footer-v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+.sidebar-user-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+.su-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+.su-info { overflow: hidden; }
+.su-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+.su-plan {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.su-plan.free { color: rgba(255, 255, 255, 0.3); }
+.su-plan.premium { color: #818cf8; }
+.su-plan.pro { color: #f59e0b; }
+
+.logout-btn-v3 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0.55rem 0.5rem;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.18s;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+.logout-btn-v3:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1024px) {
+  .sidebar-v3 { width: 72px; padding: 1.25rem 0.65rem; align-items: center; }
+  .logo-text-v3, .nav-label-v3, .nav-link-v3 span, .nav-badge-v3,
+  .upgrade-cta-v3, .sidebar-footer-v3 .su-info, .logout-btn-v3 span { display: none; }
+  .nav-link-v3 { justify-content: center; width: 40px; height: 40px; padding: 0; border-radius: 10px; }
+  .nav-link-v3.active::before { display: none; }
+  .nav-group-v3 { align-items: center; }
+  .sidebar-user-v3 { padding: 0.5rem; justify-content: center; }
+}

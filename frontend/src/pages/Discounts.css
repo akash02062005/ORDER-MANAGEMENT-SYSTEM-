@@ -1,0 +1,26 @@
+.disc-page { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.disc-page h1 { font-size: 28px; background: linear-gradient(135deg,#fff,#fca5a5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.disc-page .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.disc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
+.coupon-card { display: flex; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(236,72,153,.15)); border: 1px dashed var(--glass-border); position: relative; transition: var(--transition); }
+.coupon-card.inactive { opacity: 0.5; }
+.coupon-left { padding: 24px; display: grid; place-items: center; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; }
+.coupon-icon { width: 56px; height: 56px; border-radius: 16px; background: rgba(255,255,255,.2); display: grid; place-items: center; }
+.coupon-divider { width: 0; border-left: 2px dashed rgba(255,255,255,.3); position: relative; }
+.coupon-divider::before, .coupon-divider::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: hsl(var(--bg-main)); left: -9px; }
+.coupon-divider::before { top: -8px; }
+.coupon-divider::after { bottom: -8px; }
+.coupon-right { flex: 1; padding: 18px 20px; position: relative; }
+.coupon-top { display: flex; justify-content: space-between; align-items: center; }
+.c-label { font-size: 10px; color: hsl(var(--text-muted)); letter-spacing: 2px; }
+.c-toggle { padding: 3px 10px; border-radius: 999px; background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); font-size: 10px; cursor: pointer; }
+.coupon-card.inactive .c-toggle { background: rgba(156,163,175,.15); color: #9ca3af; border-color: rgba(156,163,175,.3); }
+.c-code { font-size: 22px; margin: 6px 0; cursor: pointer; display: flex; align-items: center; gap: 6px; color: hsl(var(--text-main)); }
+.c-code:hover { color: #a5b4fc; }
+.c-value { font-size: 14px; font-weight: 700; color: #ec4899; margin-bottom: 10px; }
+.c-meta { display: flex; gap: 14px; font-size: 11px; color: hsl(var(--text-dim)); margin-bottom: 8px; }
+.c-meta span { display: flex; align-items: center; gap: 4px; }
+.c-bar { height: 4px; background: rgba(255,255,255,.1); border-radius: 999px; overflow: hidden; }
+.c-fill { height: 100%; background: linear-gradient(90deg,#6366f1,#ec4899); }
+.c-delete { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 8px; background: transparent; border: 1px solid var(--glass-border); color: hsl(var(--text-dim)); cursor: pointer; display: grid; place-items: center; }
+.c-delete:hover { color: #ef4444; border-color: rgba(239,68,68,.4); }

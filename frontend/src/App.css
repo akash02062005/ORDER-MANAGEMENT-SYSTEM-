@@ -1,0 +1,147 @@
+/* ═══════════════════════════════════════════════════════
+   Global Styles — OrderStream V3
+   ═══════════════════════════════════════════════════════ */
+
+/* Reset */
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Utility Classes */
+.w-full { width: 100%; }
+.text-right { text-align: right; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+
+/* ─── Fade-In Animation ─── */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Pulse animation for skeletons ─── */
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Global Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: #fff;
+}
+
+/* ─── Recharts Tooltip ─── */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+.recharts-default-tooltip {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4) !important;
+  padding: 10px 14px !important;
+}
+.recharts-tooltip-label {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  margin-bottom: 4px !important;
+}
+
+/* ─── Toastify Customization ─── */
+.Toastify__toast {
+  background: rgba(15, 20, 35, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+  color: #fff !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+  padding: 12px 16px !important;
+}
+.Toastify__toast--info {
+  border-left: 3px solid #6366f1 !important;
+}
+.Toastify__toast--success {
+  border-left: 3px solid #22c55e !important;
+}
+.Toastify__toast--error {
+  border-left: 3px solid #ef4444 !important;
+}
+.Toastify__toast--warning {
+  border-left: 3px solid #f59e0b !important;
+}
+.Toastify__progress-bar {
+  height: 2px !important;
+}
+.Toastify__close-button {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+.Toastify__close-button:hover {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ─── Focus Styles ─── */
+*:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
+
+/* ─── Page content spacing ─── */
+.main-content {
+  padding: 1.75rem 2rem;
+  width: 100%;
+}
+.page-header {
+  margin-bottom: 1.5rem;
+}
+.page-header .header-text h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.65) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.page-header .header-text p {
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ─── Glass Morphism Enhancement ─── */
+.glass {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Smooth Transitions ─── */
+a, button {
+  transition: all 0.18s ease;
+}
