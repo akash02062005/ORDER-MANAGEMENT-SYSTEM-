@@ -254,18 +254,46 @@ public class MailService {
     /** Translate Brevo error bodies into messages safe to show the end user. */
     private String friendlyBrevoError(String body, int status) {
         String b = body == null ? "" : body.toLowerCase();
-        if (b.contains("sender") && (b.contains("not valid") || b.contains("not verified") || b.contains("invalid"))) {
+
+        // 403 — most common: account validation hold + sender not verified + IP auth.
+        if (b.contains("account_under_validation") || b.contains("under validation")
+                || b.contains("validate your account") || b.contains("activate your account")) {
+            return "Brevo account is still under validation. Log in to app.brevo.com, fill out "
+                    + "the account profile (Settings → My Plan → Activate account), and submit. "
+                    + "Sends are blocked until Brevo approves the account.";
+        }
+        if (b.contains("sender") && (b.contains("not valid") || b.contains("not verified")
+                || b.contains("invalid") || b.contains("permission_denied"))) {
             return "Email could not be delivered. The sender address is not verified in Brevo. "
-                    + "Go to Brevo dashboard → Senders & IP → verify your sender email and try again.";
+                    + "Open Brevo → Senders, Domains & Dedicated IPs → verify the sender email "
+                    + "(check inbox for the confirmation link), then redeploy.";
+        }
+        if (b.contains("unauthorized_ip") || b.contains("ip_not_authorized") || b.contains("authorized ip")) {
+            return "Brevo blocked the source IP. Open Brevo → SMTP & API → your API key → "
+                    + "remove the IP restriction (or add 0.0.0.0/0), then retry.";
+        }
+        if (b.contains("not_enough_credits") || b.contains("credit") && b.contains("exhausted")) {
+            return "Daily email quota reached for the free Brevo plan (300/day). Try again tomorrow "
+                    + "or upgrade the plan.";
+        }
+        if (b.contains("api_key") && (b.contains("invalid") || b.contains("not found") || b.contains("expired"))) {
+            return "Brevo rejected the API key. Generate a new key at app.brevo.com → SMTP & API → "
+                    + "API keys, then update BREVO_API_KEY on the server.";
         }
         if (status == 401) {
             return "Email service rejected the request (auth error). Check that BREVO_API_KEY is valid.";
         }
-        if (status == 402 || (b.contains("credit") && b.contains("exhausted"))) {
+        if (status == 403) {
+            // Generic 403 — surface whatever Brevo said so the user can act on it.
+            String snippet = body == null ? "" : body.length() > 200 ? body.substring(0, 200) + "..." : body;
+            return "Brevo refused the send (403). Most common fix: complete account activation at "
+                    + "app.brevo.com (Settings → My Plan → Activate account). Raw response: " + snippet;
+        }
+        if (status == 402) {
             return "Daily email quota reached for the free Brevo plan. Try again tomorrow.";
         }
         if (status == 400) {
-            return "Email service rejected the message (validation error). Check the sender and recipient addresses.";
+            return "Brevo rejected the message (validation error). Check the sender and recipient addresses.";
         }
         return "Email could not be sent (status " + status + "). Please try again later.";
     }
