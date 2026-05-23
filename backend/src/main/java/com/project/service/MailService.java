@@ -5,23 +5,34 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 /**
- * Email service with two delivery strategies (tried in order):
- *   1. Resend API (recommended — free, no SMTP setup needed, just set RESEND_API_KEY)
- *   2. Console fallback (prints OTP/link to server logs for local dev)
+ * Email service with three delivery strategies (tried in order):
+ *   1. Brevo HTTP API     — set BREVO_API_KEY + BREVO_FROM_EMAIL  (300/day free, no domain needed,
+ *                           just verify the sender address inside the Brevo dashboard)
+ *   2. Resend HTTP API    — set RESEND_API_KEY                    (100/day free, but free tier only
+ *                           sends to the account owner's email unless you verify a domain)
+ *   3. Console fallback   — prints OTP/link to server logs for local dev
  *
- * SMTP has been removed. All emails go through Resend HTTP API.
- * Get your free API key at https://resend.com/signup
+ * Switch providers without touching code — just change which env vars are set on the platform.
  */
 @Service
 public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
+
+    @Value("${brevo.api-key:}")
+    private String brevoApiKey;
+
+    @Value("${brevo.from-email:OrderStream <noreply@orderstream.local>}")
+    private String brevoFromEmail;
 
     @Value("${resend.api-key:}")
     private String resendApiKey;
@@ -36,10 +47,11 @@ public class MailService {
     }
 
     /**
-     * Returns true if Resend is configured and ready to send.
+     * True if ANY email provider is configured.
      */
     public boolean isEmailConfigured() {
-        return resendApiKey != null && !resendApiKey.isBlank();
+        return (brevoApiKey != null && !brevoApiKey.isBlank())
+            || (resendApiKey != null && !resendApiKey.isBlank());
     }
 
     public boolean sendVerificationEmail(String toEmail, String code) {
@@ -58,7 +70,7 @@ public class MailService {
                 "<p style=\"color:#6b7280;font-size:14px\">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>" +
                 "</div>";
 
-        if (sendViaResend(toEmail, subject, body, htmlBody)) return true;
+        if (dispatch(toEmail, subject, body, htmlBody)) return true;
         logOtpFallback(toEmail, code);
         return false;
     }
@@ -79,7 +91,7 @@ public class MailService {
                 "<p style=\"color:#9ca3af;font-size:12px\">This link expires in " + ttlMinutes + " minutes.</p>" +
                 "</div>";
 
-        if (sendViaResend(toEmail, subject, body, htmlBody)) return true;
+        if (dispatch(toEmail, subject, body, htmlBody)) return true;
 
         log.warn("EMAIL NOT CONFIGURED — Magic link printed to logs");
         System.out.println("\n╔══════════════════════════════════════╗");
@@ -91,17 +103,91 @@ public class MailService {
         return false;
     }
 
+    public boolean sendPasswordResetEmail(String toEmail, String code) {
+        String subject = "OrderStream Password Reset Code";
+        String body = "Your password reset code is: " + code + "\n\nThis code expires in 10 minutes.";
+
+        String htmlBody = "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px\">" +
+                "<h2 style=\"color:#4f46e5\">OrderStream</h2>" +
+                "<p>You requested a password reset. Your code is:</p>" +
+                "<div style=\"background:#f5f3ff;border-radius:12px;padding:20px;text-align:center;margin:16px 0\">" +
+                "<span style=\"font-size:32px;font-weight:800;letter-spacing:8px;color:#4f46e5\">" + code + "</span>" +
+                "</div>" +
+                "<p style=\"color:#6b7280;font-size:14px\">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>" +
+                "</div>";
+
+        if (dispatch(toEmail, subject, body, htmlBody)) return true;
+        logOtpFallback(toEmail, code);
+        return false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Provider dispatch — Brevo (preferred) → Resend → false
+    // ---------------------------------------------------------------------------
+
+    private boolean dispatch(String to, String subject, String textBody, String htmlBody) {
+        boolean brevoConfigured = brevoApiKey != null && !brevoApiKey.isBlank();
+        boolean resendConfigured = resendApiKey != null && !resendApiKey.isBlank();
+
+        if (brevoConfigured) {
+            return sendViaBrevo(to, subject, textBody, htmlBody);
+        }
+        if (resendConfigured) {
+            return sendViaResend(to, subject, textBody, htmlBody);
+        }
+        log.warn("No email provider configured (neither BREVO_API_KEY nor RESEND_API_KEY).");
+        return false;
+    }
+
     /**
-     * Send email via Resend HTTP API (https://resend.com).
-     * Free tier: 100 emails/day, no SMTP config needed.
-     * Just set RESEND_API_KEY in your .env file.
+     * Send via Brevo (https://www.brevo.com) — 300 free emails/day, no domain verification required.
+     * You must verify the sender email address inside the Brevo dashboard (one-time click).
+     */
+    private boolean sendViaBrevo(String to, String subject, String textBody, String htmlBody) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey);
+            headers.set("accept", "application/json");
+
+            Map<String, String> sender = parseSender(brevoFromEmail, "OrderStream", "noreply@orderstream.local");
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("sender", sender);
+            payload.put("to", List.of(Map.of("email", to)));
+            payload.put("subject", subject);
+            payload.put("htmlContent", htmlBody != null ? htmlBody : textBody);
+            payload.put("textContent", textBody);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "https://api.brevo.com/v3/smtp/email", request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Email sent via Brevo to: {}", to);
+                return true;
+            }
+            String body = response.getBody();
+            log.error("Brevo API returned {} for {}: {}", response.getStatusCode(), to, body);
+            throw new RuntimeException(friendlyBrevoError(body, response.getStatusCode().value()));
+
+        } catch (HttpStatusCodeException e) {
+            String body = e.getResponseBodyAsString();
+            log.error("Brevo API {} for {}: {}", e.getStatusCode(), to, body);
+            throw new RuntimeException(friendlyBrevoError(body, e.getStatusCode().value()));
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Brevo API failed for {}: {}", to, e.getMessage());
+            throw new RuntimeException("Email service is unavailable. Please try again later.");
+        }
+    }
+
+    /**
+     * Send via Resend (https://resend.com). Free tier only delivers to the Resend account owner
+     * unless a custom domain is verified.
      */
     private boolean sendViaResend(String to, String subject, String textBody, String htmlBody) {
-        if (resendApiKey == null || resendApiKey.isBlank()) {
-            log.warn("RESEND_API_KEY not set — cannot send email to {}", to);
-            return false;
-        }
-
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -122,40 +208,92 @@ public class MailService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Email sent via Resend to: {}", to);
                 return true;
-            } else {
-                log.warn("Resend API returned {}: {}", response.getStatusCode(), response.getBody());
-                return false;
             }
+            String body = response.getBody();
+            log.error("Resend API returned {} for {}: {}", response.getStatusCode(), to, body);
+            throw new RuntimeException(friendlyResendError(body, response.getStatusCode().value()));
+
+        } catch (HttpStatusCodeException e) {
+            String body = e.getResponseBodyAsString();
+            log.error("Resend API {} for {}: {}", e.getStatusCode(), to, body);
+            throw new RuntimeException(friendlyResendError(body, e.getStatusCode().value()));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            log.warn("Resend API failed for {}: {}", to, e.getMessage());
-            return false;
+            log.error("Resend API failed for {}: {}", to, e.getMessage());
+            throw new RuntimeException("Email service is unavailable. Please try again later.");
         }
     }
 
-    public boolean sendPasswordResetEmail(String toEmail, String code) {
-        String subject = "OrderStream Password Reset Code";
-        String body = "Your password reset code is: " + code + "\n\nThis code expires in 10 minutes.";
+    /**
+     * Parse "Name <email@x.com>" into Brevo's { name, email } sender object.
+     * Accepts a bare "email@x.com" too.
+     */
+    private Map<String, String> parseSender(String raw, String defaultName, String defaultEmail) {
+        Map<String, String> sender = new HashMap<>();
+        if (raw == null || raw.isBlank()) {
+            sender.put("name", defaultName);
+            sender.put("email", defaultEmail);
+            return sender;
+        }
+        String trimmed = raw.trim();
+        int lt = trimmed.indexOf('<');
+        int gt = trimmed.indexOf('>');
+        if (lt > 0 && gt > lt) {
+            String name = trimmed.substring(0, lt).trim();
+            String email = trimmed.substring(lt + 1, gt).trim();
+            sender.put("name", name.isEmpty() ? defaultName : name);
+            sender.put("email", email.isEmpty() ? defaultEmail : email);
+        } else {
+            sender.put("name", defaultName);
+            sender.put("email", trimmed);
+        }
+        return sender;
+    }
 
-        String htmlBody = "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px\">" +
-                "<h2 style=\"color:#4f46e5\">OrderStream</h2>" +
-                "<p>You requested a password reset. Your code is:</p>" +
-                "<div style=\"background:#f5f3ff;border-radius:12px;padding:20px;text-align:center;margin:16px 0\">" +
-                "<span style=\"font-size:32px;font-weight:800;letter-spacing:8px;color:#4f46e5\">" + code + "</span>" +
-                "</div>" +
-                "<p style=\"color:#6b7280;font-size:14px\">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>" +
-                "</div>";
+    /** Translate Brevo error bodies into messages safe to show the end user. */
+    private String friendlyBrevoError(String body, int status) {
+        String b = body == null ? "" : body.toLowerCase();
+        if (b.contains("sender") && (b.contains("not valid") || b.contains("not verified") || b.contains("invalid"))) {
+            return "Email could not be delivered. The sender address is not verified in Brevo. "
+                    + "Go to Brevo dashboard → Senders & IP → verify your sender email and try again.";
+        }
+        if (status == 401) {
+            return "Email service rejected the request (auth error). Check that BREVO_API_KEY is valid.";
+        }
+        if (status == 402 || (b.contains("credit") && b.contains("exhausted"))) {
+            return "Daily email quota reached for the free Brevo plan. Try again tomorrow.";
+        }
+        if (status == 400) {
+            return "Email service rejected the message (validation error). Check the sender and recipient addresses.";
+        }
+        return "Email could not be sent (status " + status + "). Please try again later.";
+    }
 
-        if (sendViaResend(toEmail, subject, body, htmlBody)) return true;
-        logOtpFallback(toEmail, code);
-        return false;
+    /** Translate Resend error bodies into messages safe to show the end user. */
+    private String friendlyResendError(String body, int status) {
+        String b = body == null ? "" : body.toLowerCase();
+        if (b.contains("can only send testing emails to your own email")
+                || (status == 403 && b.contains("verify a domain"))) {
+            return "Email could not be delivered. The email service is in test mode and can only "
+                    + "deliver to the verified Resend account owner's address. Verify a domain at "
+                    + "resend.com/domains to send to any recipient.";
+        }
+        if (status == 401 || status == 403) {
+            return "Email service rejected the request (auth error). Check that RESEND_API_KEY is valid.";
+        }
+        if (status == 422) {
+            return "Email service rejected the message (validation error). Check the sender address.";
+        }
+        return "Email could not be sent (status " + status + "). Please try again later.";
     }
 
     private void logOtpFallback(String toEmail, String code) {
-        log.warn("EMAIL NOT CONFIGURED — OTP printed to logs. Set RESEND_API_KEY for instant email delivery.");
+        log.warn("EMAIL NOT CONFIGURED — OTP printed to logs. Set BREVO_API_KEY (recommended) or RESEND_API_KEY.");
         System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
         System.out.println("║  EMAIL NOT CONFIGURED — OTP FALLBACK                        ║");
-        System.out.println("║  Set RESEND_API_KEY in .env for instant email delivery       ║");
-        System.out.println("║  Get free key at: https://resend.com/signup                  ║");
+        System.out.println("║  Set BREVO_API_KEY in .env for delivery to any inbox         ║");
+        System.out.println("║  Get free key at: https://app.brevo.com (300 emails/day)     ║");
         System.out.println("╠══════════════════════════════════════════════════════════════╣");
         System.out.println("  To:   " + toEmail);
         System.out.println("  OTP:  " + code);
