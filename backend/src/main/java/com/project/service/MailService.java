@@ -8,18 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 /**
- * Email service with three delivery strategies (tried in order):
- *   1. Brevo HTTP API     — set BREVO_API_KEY + BREVO_FROM_EMAIL  (300/day free, no domain needed,
- *                           just verify the sender address inside the Brevo dashboard)
- *   2. Resend HTTP API    — set RESEND_API_KEY                    (100/day free, but free tier only
+ * Email service with two delivery strategies (tried in order):
+ *   1. Resend HTTP API    — set RESEND_API_KEY                    (100/day free, but free tier only
  *                           sends to the account owner's email unless you verify a domain)
- *   3. Console fallback   — prints OTP/link to server logs for local dev
+ *   2. Console fallback   — prints OTP/link to server logs for local dev
  *
  * Switch providers without touching code — just change which env vars are set on the platform.
  */
@@ -27,12 +23,6 @@ import java.util.Random;
 public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
-
-    @Value("${brevo.api-key:}")
-    private String brevoApiKey;
-
-    @Value("${brevo.from-email:OrderStream <noreply@orderstream.local>}")
-    private String brevoFromEmail;
 
     @Value("${resend.api-key:}")
     private String resendApiKey;
@@ -50,8 +40,7 @@ public class MailService {
      * True if ANY email provider is configured.
      */
     public boolean isEmailConfigured() {
-        return (brevoApiKey != null && !brevoApiKey.isBlank())
-            || (resendApiKey != null && !resendApiKey.isBlank());
+        return resendApiKey != null && !resendApiKey.isBlank();
     }
 
     public boolean sendVerificationEmail(String toEmail, String code) {
@@ -122,65 +111,15 @@ public class MailService {
     }
 
     // ---------------------------------------------------------------------------
-    // Provider dispatch — Brevo (preferred) → Resend → false
+    // Provider dispatch — Resend → false
     // ---------------------------------------------------------------------------
 
     private boolean dispatch(String to, String subject, String textBody, String htmlBody) {
-        boolean brevoConfigured = brevoApiKey != null && !brevoApiKey.isBlank();
-        boolean resendConfigured = resendApiKey != null && !resendApiKey.isBlank();
-
-        if (brevoConfigured) {
-            return sendViaBrevo(to, subject, textBody, htmlBody);
-        }
-        if (resendConfigured) {
+        if (resendApiKey != null && !resendApiKey.isBlank()) {
             return sendViaResend(to, subject, textBody, htmlBody);
         }
-        log.warn("No email provider configured (neither BREVO_API_KEY nor RESEND_API_KEY).");
+        log.warn("No email provider configured (RESEND_API_KEY is not set).");
         return false;
-    }
-
-    /**
-     * Send via Brevo (https://www.brevo.com) — 300 free emails/day, no domain verification required.
-     * You must verify the sender email address inside the Brevo dashboard (one-time click).
-     */
-    private boolean sendViaBrevo(String to, String subject, String textBody, String htmlBody) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("api-key", brevoApiKey);
-            headers.set("accept", "application/json");
-
-            Map<String, String> sender = parseSender(brevoFromEmail, "OrderStream", "noreply@orderstream.local");
-
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("sender", sender);
-            payload.put("to", List.of(Map.of("email", to)));
-            payload.put("subject", subject);
-            payload.put("htmlContent", htmlBody != null ? htmlBody : textBody);
-            payload.put("textContent", textBody);
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-            ResponseEntity<String> response = restTemplate.postForEntity(
-                    "https://api.brevo.com/v3/smtp/email", request, String.class);
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Email sent via Brevo to: {}", to);
-                return true;
-            }
-            String body = response.getBody();
-            log.error("Brevo API returned {} for {}: {}", response.getStatusCode(), to, body);
-            throw new RuntimeException(friendlyBrevoError(body, response.getStatusCode().value()));
-
-        } catch (HttpStatusCodeException e) {
-            String body = e.getResponseBodyAsString();
-            log.error("Brevo API {} for {}: {}", e.getStatusCode(), to, body);
-            throw new RuntimeException(friendlyBrevoError(body, e.getStatusCode().value()));
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Brevo API failed for {}: {}", to, e.getMessage());
-            throw new RuntimeException("Email service is unavailable. Please try again later.");
-        }
     }
 
     /**
@@ -225,79 +164,6 @@ public class MailService {
         }
     }
 
-    /**
-     * Parse "Name <email@x.com>" into Brevo's { name, email } sender object.
-     * Accepts a bare "email@x.com" too.
-     */
-    private Map<String, String> parseSender(String raw, String defaultName, String defaultEmail) {
-        Map<String, String> sender = new HashMap<>();
-        if (raw == null || raw.isBlank()) {
-            sender.put("name", defaultName);
-            sender.put("email", defaultEmail);
-            return sender;
-        }
-        String trimmed = raw.trim();
-        int lt = trimmed.indexOf('<');
-        int gt = trimmed.indexOf('>');
-        if (lt > 0 && gt > lt) {
-            String name = trimmed.substring(0, lt).trim();
-            String email = trimmed.substring(lt + 1, gt).trim();
-            sender.put("name", name.isEmpty() ? defaultName : name);
-            sender.put("email", email.isEmpty() ? defaultEmail : email);
-        } else {
-            sender.put("name", defaultName);
-            sender.put("email", trimmed);
-        }
-        return sender;
-    }
-
-    /** Translate Brevo error bodies into messages safe to show the end user. */
-    private String friendlyBrevoError(String body, int status) {
-        String b = body == null ? "" : body.toLowerCase();
-
-        // 403 — most common: account validation hold + sender not verified + IP auth.
-        if (b.contains("account_under_validation") || b.contains("under validation")
-                || b.contains("validate your account") || b.contains("activate your account")) {
-            return "Brevo account is still under validation. Log in to app.brevo.com, fill out "
-                    + "the account profile (Settings → My Plan → Activate account), and submit. "
-                    + "Sends are blocked until Brevo approves the account.";
-        }
-        if (b.contains("sender") && (b.contains("not valid") || b.contains("not verified")
-                || b.contains("invalid") || b.contains("permission_denied"))) {
-            return "Email could not be delivered. The sender address is not verified in Brevo. "
-                    + "Open Brevo → Senders, Domains & Dedicated IPs → verify the sender email "
-                    + "(check inbox for the confirmation link), then redeploy.";
-        }
-        if (b.contains("unauthorized_ip") || b.contains("ip_not_authorized") || b.contains("authorized ip")) {
-            return "Brevo blocked the source IP. Open Brevo → SMTP & API → your API key → "
-                    + "remove the IP restriction (or add 0.0.0.0/0), then retry.";
-        }
-        if (b.contains("not_enough_credits") || b.contains("credit") && b.contains("exhausted")) {
-            return "Daily email quota reached for the free Brevo plan (300/day). Try again tomorrow "
-                    + "or upgrade the plan.";
-        }
-        if (b.contains("api_key") && (b.contains("invalid") || b.contains("not found") || b.contains("expired"))) {
-            return "Brevo rejected the API key. Generate a new key at app.brevo.com → SMTP & API → "
-                    + "API keys, then update BREVO_API_KEY on the server.";
-        }
-        if (status == 401) {
-            return "Email service rejected the request (auth error). Check that BREVO_API_KEY is valid.";
-        }
-        if (status == 403) {
-            // Generic 403 — surface whatever Brevo said so the user can act on it.
-            String snippet = body == null ? "" : body.length() > 200 ? body.substring(0, 200) + "..." : body;
-            return "Brevo refused the send (403). Most common fix: complete account activation at "
-                    + "app.brevo.com (Settings → My Plan → Activate account). Raw response: " + snippet;
-        }
-        if (status == 402) {
-            return "Daily email quota reached for the free Brevo plan. Try again tomorrow.";
-        }
-        if (status == 400) {
-            return "Brevo rejected the message (validation error). Check the sender and recipient addresses.";
-        }
-        return "Email could not be sent (status " + status + "). Please try again later.";
-    }
-
     /** Translate Resend error bodies into messages safe to show the end user. */
     private String friendlyResendError(String body, int status) {
         String b = body == null ? "" : body.toLowerCase();
@@ -317,14 +183,15 @@ public class MailService {
     }
 
     private void logOtpFallback(String toEmail, String code) {
-        log.warn("EMAIL NOT CONFIGURED — OTP printed to logs. Set BREVO_API_KEY (recommended) or RESEND_API_KEY.");
+        log.warn("EMAIL NOT CONFIGURED — OTP printed to logs. Set RESEND_API_KEY.");
         System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
         System.out.println("║  EMAIL NOT CONFIGURED — OTP FALLBACK                        ║");
-        System.out.println("║  Set BREVO_API_KEY in .env for delivery to any inbox         ║");
-        System.out.println("║  Get free key at: https://app.brevo.com (300 emails/day)     ║");
+        System.out.println("║  Set RESEND_API_KEY in .env for email delivery               ║");
+        System.out.println("║  Get free key at: https://resend.com (100 emails/day)        ║");
         System.out.println("╠══════════════════════════════════════════════════════════════╣");
         System.out.println("  To:   " + toEmail);
         System.out.println("  OTP:  " + code);
         System.out.println("╚══════════════════════════════════════════════════════════════╝\n");
     }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
