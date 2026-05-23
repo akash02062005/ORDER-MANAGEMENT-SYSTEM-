@@ -4,6 +4,7 @@ import com.project.dto.CustomerStats;
 import com.project.model.Order;
 import com.project.model.Notification;
 import com.project.model.Product;
+import com.project.model.Shipment;
 import com.project.repository.OrderRepository;
 import com.project.repository.ProductRepository;
 import com.project.websocket.OrderPublisher;
@@ -35,6 +36,9 @@ public class OrderService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private ShipmentService shipmentService;
 
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
@@ -100,6 +104,23 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         orderPublisher.publishOrderUpdate(savedOrder);
 
+        // Auto-create a Shipment so the Shipments page reflects real orders.
+        // Failure here must not roll back the order — just log it.
+        try {
+            Shipment shipment = new Shipment();
+            shipment.setOrderId(savedOrder.getId());
+            shipment.setCarrier(pickCarrier());
+            shipment.setOriginCity("Warehouse");
+            shipment.setDestinationCity(
+                    savedOrder.getCustomerName() != null ? savedOrder.getCustomerName() + "'s address" : "Customer address");
+            shipment.setStage("PICKED");
+            shipmentService.create(shipment);
+        } catch (Exception shipErr) {
+            // Don't block the order create on shipment failure
+            System.err.println("WARN: Failed to auto-create shipment for order "
+                    + savedOrder.getId() + ": " + shipErr.getMessage());
+        }
+
         // Push notification
         notificationService.push(
             null,
@@ -111,6 +132,11 @@ public class OrderService {
         );
 
         return savedOrder;
+    }
+
+    private static final String[] CARRIERS = {"BlueDart", "Delhivery", "DTDC", "FedEx", "Ecom Express"};
+    private String pickCarrier() {
+        return CARRIERS[(int) (Math.random() * CARRIERS.length)];
     }
 
     public Order updateOrderStatus(String id, String status) {
