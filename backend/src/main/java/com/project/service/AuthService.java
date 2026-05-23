@@ -123,7 +123,13 @@ public class AuthService implements UserDetailsService {
         user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
 
         User savedUser = userRepository.save(user);
-        mailService.sendVerificationEmail(savedUser.getEmail(), savedUser.getVerificationCode());
+        try {
+            mailService.sendVerificationEmail(savedUser.getEmail(), savedUser.getVerificationCode());
+        } catch (RuntimeException mailErr) {
+            // Roll back the half-registered user so they can try again with a working address.
+            userRepository.delete(savedUser);
+            throw new RuntimeException(mailErr.getMessage());
+        }
         return savedUser;
     }
 
@@ -155,6 +161,7 @@ public class AuthService implements UserDetailsService {
         user.setVerificationCode(mailService.generateOTP());
         user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
         userRepository.save(user);
+        // Let exceptions bubble up so the user sees the real reason if Resend rejects the send.
         mailService.sendVerificationEmail(user.getEmail(), user.getVerificationCode());
     }
 
@@ -175,6 +182,7 @@ public class AuthService implements UserDetailsService {
         user.setVerificationCode(otp);
         user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
         userRepository.save(user);
+        // Propagate any Resend failure so the UI shows a real error.
         mailService.sendPasswordResetEmail(email, otp);
     }
 
