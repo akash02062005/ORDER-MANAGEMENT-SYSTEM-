@@ -1,0 +1,52 @@
+# Render Blueprint for OrderStream
+# Push this file to GitHub, then in Render: New -> Blueprint -> pick this repo.
+# Render will create both services in one shot.
+
+services:
+  # ---------------- Spring Boot backend ----------------
+  - type: web
+    name: orderstream-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/auth/health   # change if you don't have this endpoint; "/" also works
+    envVars:
+      - key: SPRING_DATA_MONGODB_URI
+        sync: false                     # paste your Mongo Atlas SRV URI in the dashboard
+      - key: JWT_SECRET
+        generateValue: true             # Render generates a strong random value
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: "OrderStream <onboarding@resend.dev>"
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: APP_MAGIC_LINK_SECRET
+        generateValue: true
+      - key: APP_FRONTEND_URL
+        sync: false                     # set to your static-site URL after first deploy
+
+  # ---------------- React (Vite) frontend ----------------
+  - type: web
+    name: orderstream-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false                     # https://<your-backend>.onrender.com/api
+      - key: VITE_WS_URL
+        sync: false                     # wss://<your-backend>.onrender.com/ws
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
