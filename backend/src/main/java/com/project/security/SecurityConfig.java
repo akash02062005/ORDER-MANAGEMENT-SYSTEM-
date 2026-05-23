@@ -49,10 +49,28 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174", "http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+
+        // Allowed origins: local dev + production frontend (from APP_FRONTEND_URL env var)
+        // and any *.onrender.com domain so deploy-preview URLs also work.
+        java.util.List<String> patterns = new java.util.ArrayList<>(Arrays.asList(
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+            "https://*.onrender.com"
+        ));
+        String frontend = System.getenv("APP_FRONTEND_URL");
+        if (frontend != null && !frontend.isBlank()) {
+            // Trim any accidental trailing slash so the match is exact
+            patterns.add(frontend.replaceAll("/+$", ""));
+        }
+        configuration.setAllowedOriginPatterns(patterns);
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
